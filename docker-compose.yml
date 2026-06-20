@@ -1,0 +1,63 @@
+services:
+  # Base de Datos MySQL (Docker la "prende" por ti)
+  db-mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_DATABASE=db_innovatech
+      - MYSQL_ROOT_PASSWORD=rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql # Aquí se cumple el requisito de persistencia (IE3)
+    networks:
+      - innova-network
+
+  # Microservicio de Despachos
+  back-despachos:
+    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    ports:
+      - "8080:8080"
+    environment:
+      # Estos nombres deben ser IGUALES a los de tus archivos .properties
+      - DB_ENDPOINT=db-mysql
+      - DB_PORT=3306
+      - DB_NAME=db_innovatech
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    depends_on:
+      - db-mysql
+    networks:
+      - innova-network
+
+  # Microservicio de Ventas
+  back-ventas:
+    build: ./back-Ventas_SpringBoot/Springboot-API-REST
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_ENDPOINT=db-mysql
+      - DB_PORT=3306
+      - DB_NAME=db_innovatech
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+    depends_on:
+      - db-mysql
+    networks:
+      - innova-network
+
+  # Frontend
+  frontend:
+    build: ./front_despacho
+    ports:
+      - "80:80"
+    networks:
+      - innova-network
+
+networks:
+  innova-network:
+    driver: bridge
+
+volumes:
+  mysql_data: # Definición del volumen para persistencia (IE3)
