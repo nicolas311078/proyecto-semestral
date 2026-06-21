@@ -1,0 +1,104 @@
+name: CI/CD Pipeline - AWS ECR & EKS
+
+on:
+  push:
+    branches:
+      - main # Cambia esto si tu rama principal tiene otro nombre (ej. master)
+
+jobs:
+  build-and-push-ecr:
+    name: Construir y Subir a ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar Java JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} # Mantener si usas cuenta de AWS Academy
+          aws-region: us-east-1
+
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Compilar y Subir Back-Despachos
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: microservice-despachos
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Compilar y Subir Back-Ventas
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: microservice-ventas
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd back-Ventas_SpringBoot/Springboot-API-REST
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Construir y Subir Frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd front_despacho
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy-to-eks:
+    name: Desplegar en Amazon EKS
+    needs: build-and-push-ecr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Actualizar Kubeconfig para EKS
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name innovatech-cluster
+
+      - name: Desplegar nuevas imágenes en EKS
+        env:
+          ECR_REGISTRY: 538325213671.dkr.ecr.us-east-1.amazonaws.com # Revisa que este sea tu ID de cuenta AWS correcto
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Actualizar imagen de Despachos
+          kubectl set image deployment/innovatech-back-despachos backend-container=$ECR_REGISTRY/microservice-despachos:$IMAGE_TAG
+          
+          # Actualizar imagen de Ventas
+          kubectl set image deployment/innovatech-back-ventas ventas-container=$ECR_REGISTRY/microservice-ventas:$IMAGE_TAG
+          
+          # Actualizar imagen del Frontend
+          kubectl set image deployment/innovatech-frontend frontend-container=$ECR_REGISTRY/frontend:$IMAGE_TAG
+
+      - name: Verificar estado del despliegue (Rollout Status)
+        run: |
+          kubectl rollout status deployment/innovatech-back-despachos
+          kubectl rollout status deployment/innovatech-back-ventas
+          kubectl rollout status deployment/innovatech-frontend
