@@ -3,7 +3,7 @@ name: CI/CD Pipeline - AWS ECR & EKS
 on:
   push:
     branches:
-      - dev # Cambia esto si tu rama principal tiene otro nombre (ej. master)
+      - dev # Rama principal actual
 
 jobs:
   build-and-push-ecr:
@@ -39,8 +39,6 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
@@ -51,8 +49,6 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd back-Ventas_SpringBoot/Springboot-API-REST
-          chmod +x mvnw
-          ./mvnw clean package -DskipTests
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
@@ -71,6 +67,10 @@ jobs:
     needs: build-and-push-ecr
     runs-on: ubuntu-latest
     steps:
+      # IMPORTANTE: Checkout extra para poder leer el archivo k8s-master.yaml en este servidor
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
       - name: Configurar credenciales de AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -85,16 +85,17 @@ jobs:
 
       - name: Desplegar nuevas imágenes en EKS
         env:
-          ECR_REGISTRY: 538325213671.dkr.ecr.us-east-1.amazonaws.com # Revisa que este sea tu ID de cuenta AWS correcto
+          ECR_REGISTRY: 538325213671.dkr.ecr.us-east-1.amazonaws.com # Tu ID de cuenta AWS
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Actualizar imagen de Despachos
+          # 1. CREAR LA ARQUITECTURA BASE EN EL CLÚSTER
+          kubectl apply -f k8s-master.yaml
+          
+          # 2. ACTUALIZAR LAS IMÁGENES DE LOS CONTENEDORES
           kubectl set image deployment/innovatech-back-despachos backend-container=$ECR_REGISTRY/microservice-despachos:$IMAGE_TAG
           
-          # Actualizar imagen de Ventas
           kubectl set image deployment/innovatech-back-ventas ventas-container=$ECR_REGISTRY/microservice-ventas:$IMAGE_TAG
           
-          # Actualizar imagen del Frontend
           kubectl set image deployment/innovatech-frontend frontend-container=$ECR_REGISTRY/frontend:$IMAGE_TAG
 
       - name: Verificar estado del despliegue (Rollout Status)
