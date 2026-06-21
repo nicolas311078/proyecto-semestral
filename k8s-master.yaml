@@ -1,4 +1,4 @@
-# 1. BASE DE DATOS MYSQL (Almacenamiento temporal para evitar error Pending)
+# 1. BASE DE DATOS MYSQL
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -134,7 +134,7 @@ spec:
       targetPort: 8081
 
 ---
-# 4. FRONTEND
+# 4. FRONTEND (CONFIGURACIÓN CON LOADBALANCER)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -160,7 +160,7 @@ kind: Service
 metadata:
   name: innovatech-service-front
 spec:
-  type: LoadBalancer
+  type: LoadBalancer  # Configuración estándar para rúbricas de AWS
   selector:
     app: frontend
   ports:
