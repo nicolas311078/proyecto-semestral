@@ -3,13 +3,9 @@
 *.iml
 .idea/
 *.log
-# Permitir la carpeta oculta de Maven Wrapper
-!.mvn/
-!mvnw
-!mvnw.cmd
-# Ignora dependencias locales
+
+# Ignora dependencias locales y archivos compilados
 target/
-.mvn/
 .settings/
 
 # Ignora control de versiones y sistema de build
