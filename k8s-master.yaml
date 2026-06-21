@@ -87,8 +87,6 @@ spec:
               value: "rootpassword"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
-      nodeSelector:
-        servidor: ec2-backDespachos
 ---
 apiVersion: v1
 kind: Service
@@ -135,8 +133,7 @@ spec:
               value: "rootpassword"
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
-      nodeSelector:
-        servidor: ec2-backVentas
+
 ---
 apiVersion: v1
 kind: Service
@@ -170,8 +167,7 @@ spec:
           image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
           ports:
             - containerPort: 80
-      nodeSelector:
-        servidor: ec2-front
+
 ---
 apiVersion: v1
 kind: Service
