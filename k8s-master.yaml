@@ -58,19 +58,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: innovatech-back-despachos
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: back-despachos
-  template:
-    metadata:
-      labels:
-        app: back-despachos
-    spec:
-      containers:
-        - name: backend-container
-          image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
+containers:
+  - name: backend-container
+    image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
           ports:
             - containerPort: 8080
           env:
