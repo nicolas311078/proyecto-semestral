@@ -72,7 +72,10 @@ spec:
             - name: DB_USERNAME
               value: "root"
             - name: DB_PASSWORD
-              value: "rootpassword"
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: password
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
 ---
@@ -81,6 +84,7 @@ kind: Service
 metadata:
   name: innovatech-service-back
 spec:
+  type: ClusterIP
   selector:
     app: back-despachos
   ports:
@@ -118,7 +122,10 @@ spec:
             - name: DB_USERNAME
               value: "root"
             - name: DB_PASSWORD
-              value: "rootpassword"
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: password
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
 ---
@@ -127,6 +134,7 @@ kind: Service
 metadata:
   name: innovatech-service-ventas
 spec:
+  type: ClusterIP
   selector:
     app: back-ventas
   ports:
@@ -134,7 +142,7 @@ spec:
       targetPort: 8081
 
 ---
-# 4. FRONTEND (CONFIGURACIÓN CON LOADBALANCER)
+# 4. FRONTEND
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -160,7 +168,7 @@ kind: Service
 metadata:
   name: innovatech-service-front
 spec:
-  type: LoadBalancer  # Configuración estándar para rúbricas de AWS
+  type: LoadBalancer
   selector:
     app: frontend
   ports:
