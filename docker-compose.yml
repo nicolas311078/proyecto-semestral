@@ -1,63 +1,102 @@
-services:
-  # Base de Datos MySQL (Docker la "prende" por ti)
-  db-mysql:
-    image: mysql:8.0
-    environment:
-      - MYSQL_DATABASE=db_innovatech
-      - MYSQL_ROOT_PASSWORD=rootpassword
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql # Aquí se cumple el requisito de persistencia (IE3)
-    networks:
-      - innova-network
+name: CI/CD Pipeline - AWS ECR & EKS
 
-  # Microservicio de Despachos
-  back-despachos:
-    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-    ports:
-      - "8080:8080"
-    environment:
-      # Estos nombres deben ser IGUALES a los de tus archivos .properties
-      - DB_ENDPOINT=db-mysql
-      - DB_PORT=3306
-      - DB_NAME=db_innovatech
-      - DB_USERNAME=root
-      - DB_PASSWORD=rootpassword
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
-    depends_on:
-      - db-mysql
-    networks:
-      - innova-network
+on:
+  push:
+    branches:
+      - dev
 
-  # Microservicio de Ventas
-  back-ventas:
-    build: ./back-Ventas_SpringBoot/Springboot-API-REST
-    ports:
-      - "8081:8081"
-    environment:
-      - DB_ENDPOINT=db-mysql
-      - DB_PORT=3306
-      - DB_NAME=db_innovatech
-      - DB_USERNAME=root
-      - DB_PASSWORD=rootpassword
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db-mysql:3306/db_innovatech?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
-    depends_on:
-      - db-mysql
-    networks:
-      - innova-network
+jobs:
+  build-and-push-ecr:
+    name: Construir y Subir a ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
 
-  # Frontend
-  frontend:
-    build: ./front_despacho
-    ports:
-      - "80:80"
-    networks:
-      - innova-network
+      - name: Configurar Java JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
-networks:
-  innova-network:
-    driver: bridge
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
+          aws-region: us-east-1
 
-volumes:
-  mysql_data: # Definición del volumen para persistencia (IE3)
+      - name: Login a Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Compilar y Subir Back-Despachos
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: microservice-despachos
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Compilar y Subir Back-Ventas
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: microservice-ventas
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd back-Ventas_SpringBoot/Springboot-API-REST
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Construir y Subir Frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd front_despacho
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy-to-eks:
+    name: Desplegar en Amazon EKS
+    needs: build-and-push-ecr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+
+      - name: Configurar credenciales de AWS
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Actualizar Kubeconfig para EKS
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name innovatech-cluster
+
+      - name: Desplegar nuevas imágenes en EKS
+        env:
+          ECR_REGISTRY: 538325213671.dkr.ecr.us-east-1.amazonaws.com 
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # 1. CREAR LA ARQUITECTURA BASE SI NO EXISTE
+          kubectl apply -f k8s-master.yaml
+          
+          # 2. ACTUALIZAR LAS IMÁGENES CON LA VERSIÓN RECIÉN COMPILADA
+          kubectl set image deployment/innovatech-back-despachos backend-container=$ECR_REGISTRY/microservice-despachos:$IMAGE_TAG
+          kubectl set image deployment/innovatech-back-ventas ventas-container=$ECR_REGISTRY/microservice-ventas:$IMAGE_TAG
+          kubectl set image deployment/innovatech-frontend frontend-container=$ECR_REGISTRY/frontend:$IMAGE_TAG
+
+      - name: Verificar estado del despliegue (Rollout Status)
+        run: |
+          kubectl rollout status deployment/innovatech-back-despachos
+          kubectl rollout status deployment/innovatech-back-ventas
+          kubectl rollout status deployment/innovatech-frontend
