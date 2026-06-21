@@ -3,7 +3,7 @@ name: CI/CD Pipeline - AWS ECR & EKS
 on:
   push:
     branches:
-      - main # Cambia esto si tu rama principal tiene otro nombre (ej. master)
+      - dev # Cambia esto si tu rama principal tiene otro nombre (ej. master)
 
 jobs:
   build-and-push-ecr:
