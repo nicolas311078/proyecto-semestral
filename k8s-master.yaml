@@ -153,7 +153,7 @@ spec:
       targetPort: 8081
 
 ---
-# 4. FRONTEND Y BALANCEADOR DE CARGA
+# 4. FRONTEND (DESPLIEGUE Y BALANCEADOR DE CARGA)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -168,25 +168,23 @@ spec:
       labels:
         app: frontend
     spec:
-      imagePullSecrets:
-        - name: ecr-secret # <-- Permite descargar la imagen desde ECR
       containers:
         - name: frontend-container
-          image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
+          image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/frontend:latest # <--- ID corregido
           ports:
             - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: innovatech-frontend-lb
+  name: innovatech-service-frontend
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    # Pasaporte al éxito: Esto le ordena a AWS que el balanceador sea PÚBLICO
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
-  type: LoadBalancer
+  type: LoadBalancer # <--- Esto creará el balanceador físico en AWS automáticamente
   selector:
     app: frontend
   ports:
-    - protocol: TCP
-      port: 80
+    - port: 80
       targetPort: 80
