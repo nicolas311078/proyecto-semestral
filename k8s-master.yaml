@@ -178,6 +178,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: innovatech-service-frontend
+  annotations:
+    # Pasaporte al éxito: Esto le ordena a AWS que el balanceador sea PÚBLICO
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
   type: LoadBalancer # <--- Esto creará el balanceador físico en AWS automáticamente
   selector:
