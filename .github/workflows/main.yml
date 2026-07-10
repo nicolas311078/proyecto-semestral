@@ -3,7 +3,7 @@ name: CI/CD Pipeline - AWS ECR & EKS
 on:
   push:
     branches:
-      - dev # Rama principal actual
+      - deploy # Rama principal actual
 
 jobs:
   build-and-push-ecr:
