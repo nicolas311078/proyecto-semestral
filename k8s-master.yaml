@@ -1,15 +1,4 @@
-# 1. BASE DE DATOS MYSQL (VOLUMEN PERSISTENTE Y SERVICIO)
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
----
+# 1. BASE DE DATOS MYSQL (Almacenamiento adaptado para AWS Academy)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,8 +35,7 @@ spec:
               mountPath: /var/lib/mysql
       volumes:
         - name: mysql-data
-          persistentVolumeClaim:
-            claimName: mysql-pvc
+          emptyDir: {} # <-- Esto soluciona el estado Pending de la base de datos
 ---
 apiVersion: v1
 kind: Service
@@ -76,6 +64,8 @@ spec:
       labels:
         app: back-despachos
     spec:
+      imagePullSecrets:
+        - name: ecr-secret # <-- Permite descargar la imagen desde ECR
       containers:
         - name: backend-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
@@ -126,6 +116,8 @@ spec:
       labels:
         app: back-ventas
     spec:
+      imagePullSecrets:
+        - name: ecr-secret # <-- Permite descargar la imagen desde ECR
       containers:
         - name: ventas-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/microservice-ventas:latest
@@ -161,7 +153,7 @@ spec:
       targetPort: 8081
 
 ---
-# 4. FRONTEND
+# 4. FRONTEND Y BALANCEADOR DE CARGA
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -176,10 +168,25 @@ spec:
       labels:
         app: frontend
     spec:
+      imagePullSecrets:
+        - name: ecr-secret # <-- Permite descargar la imagen desde ECR
       containers:
         - name: frontend-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
           ports:
             - containerPort: 80
 ---
-# ... existing aode ...
+apiVersion: v1
+kind: Service
+metadata:
+  name: innovatech-frontend-lb
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
