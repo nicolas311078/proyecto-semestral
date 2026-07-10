@@ -85,7 +85,7 @@ jobs:
 
       - name: Desplegar nuevas imágenes en EKS
         env:
-          ECR_REGISTRY: 538325213671.dkr.ecr.us-east-1.amazonaws.com # Tu ID de cuenta AWS
+          ECR_REGISTRY: 095164464833.dkr.ecr.us-east-1.amazonaws.com # Tu ID de cuenta AWS
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # 1. CREAR LA ARQUITECTURA BASE EN EL CLÚSTER
