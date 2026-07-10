@@ -42,7 +42,7 @@ export const FormDespacho = ({ venta, onClose }) => {
       });
       Swal.fire({
         title: "Despacho registrado 🛻!",
-        text: "El despacho ha sido generado con éxito en la base de datos",
+        text: "El despacho a sido generado con éxito en la base de datos",
         icon: "success",
         confirmButtonText: "Aceptar",
       });
