@@ -17,7 +17,7 @@ export const TableCompras = () => {
       setVentas(response.data);
     });
   };
-  // Llamada a la función para obtener los datos cuando el componente se monta
+  // Llamada aa función para obtener los datos cuando el componente se monta
   useEffect(() => {
     compras();
   }, []);
