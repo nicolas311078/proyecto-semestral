@@ -1,5 +1,4 @@
 services:
-  # Base de Datos MySQL (Docker la "prende" por ti)
   db-mysql:
     image: mysql:8.0
     environment:
@@ -8,7 +7,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql # Aquí se cumple el requisito de persistencia (IE3)
+      - mysql_data:/var/lib/mysql 
     networks:
       - innova-network
 
@@ -18,7 +17,6 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Estos nombres deben ser IGUALES a los de tus archivos .properties
       - DB_ENDPOINT=db-mysql
       - DB_PORT=3306
       - DB_NAME=db_innovatech
