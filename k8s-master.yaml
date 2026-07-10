@@ -69,6 +69,13 @@ spec:
       containers:
         - name: backend-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           ports:
             - containerPort: 8080
           env:
@@ -121,6 +128,13 @@ spec:
       containers:
         - name: ventas-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/microservice-ventas:latest
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           ports:
             - containerPort: 8081
           env:
@@ -171,13 +185,20 @@ spec:
       containers:
         - name: frontend-container
           image: 941678413307.dkr.ecr.us-east-1.amazonaws.com/frontend:latest # <--- ID corregido
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           ports:
             - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: innovatech-service-frontend
+  name: innovatech-frontend-lb
   annotations:
     # Pasaporte al éxito: Esto le ordena a AWS que el balanceador sea PÚBLICO
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
