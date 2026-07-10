@@ -30,7 +30,7 @@ jobs:
 
       - name: Login a Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2 # CORREGIDO: Actualizado a v2 para evitar warnings
 
       - name: Compilar y Subir Back-Despachos
         env:
@@ -39,8 +39,10 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # CORREGIDO: Se construyen y suben ambas etiquetas (sha y latest)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: Compilar y Subir Back-Ventas
         env:
@@ -49,8 +51,10 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd back-Ventas_SpringBoot/Springboot-API-REST
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # CORREGIDO: Se construyen y suben ambas etiquetas (sha y latest)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: Construir y Subir Frontend
         env:
@@ -59,15 +63,16 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           cd front_despacho
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          # CORREGIDO: Se construyen y suben ambas etiquetas (sha y latest)
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
   deploy-to-eks:
     name: Desplegar en Amazon EKS
     needs: build-and-push-ecr
     runs-on: ubuntu-latest
     steps:
-      # IMPORTANTE: Checkout extra para poder leer el archivo k8s-master.yaml en este servidor
       - name: Checkout del código
         uses: actions/checkout@v3
 
@@ -83,9 +88,18 @@ jobs:
         run: |
           aws eks update-kubeconfig --region us-east-1 --name innovatech-cluster
 
+      # CORREGIDO: Inyección del secreto de ECR para evitar ImagePullBackOff (Error 403)
+      - name: Crear secreto de ECR en Kubernetes
+        run: |
+          kubectl delete secret ecr-secret --ignore-not-found
+          kubectl create secret docker-registry ecr-secret \
+            --docker-server=941678413307.dkr.ecr.us-east-1.amazonaws.com \
+            --docker-username=AWS \
+            --docker-password=$(aws ecr get-login-password --region us-east-1)
+
       - name: Desplegar nuevas imágenes en EKS
         env:
-          ECR_REGISTRY: 941678413307.dkr.ecr.us-east-1.amazonaws.com # Tu ID de cuenta AWS
+          ECR_REGISTRY: 941678413307.dkr.ecr.us-east-1.amazonaws.com # Tu ID de cuenta AWS actualizado
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # 1. CREAR LA ARQUITECTURA BASE EN EL CLÚSTER
