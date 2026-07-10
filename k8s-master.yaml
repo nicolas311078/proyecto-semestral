@@ -78,7 +78,7 @@ spec:
     spec:
       containers:
         - name: backend-container
-          image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
+          image: 095164464833.dkr.ecr.us-east-1.amazonaws.com/microservice-despachos:latest
           ports:
             - containerPort: 8080
           env:
@@ -128,7 +128,7 @@ spec:
     spec:
       containers:
         - name: ventas-container
-          image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/microservice-ventas:latest
+          image: 095164464833.dkr.ecr.us-east-1.amazonaws.com/microservice-ventas:latest
           ports:
             - containerPort: 8081
           env:
@@ -178,8 +178,8 @@ spec:
     spec:
       containers:
         - name: frontend-container
-          image: 538325213671.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
+          image: 095164464833.dkr.ecr.us-east-1.amazonaws.com/frontend:latest
           ports:
             - containerPort: 80
 ---
-# ... existing code ...
+# ... existing aode ...

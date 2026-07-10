@@ -25,7 +25,7 @@ export const TableCompras = () => {
   //state que controla el modal
   const [openModal, setOpenModal] = useState(false);
 
-  //state que  abre el modal junto con la data del id seleccionado
+  //state que    abre el modal junto con la data del id seleccionado
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
   const handleAbrirModal = (venta) => {
     setVentaSeleccionada(venta);
