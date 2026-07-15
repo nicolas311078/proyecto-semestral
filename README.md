@@ -35,7 +35,8 @@ La seguridad se planificó desde el día uno mediante una estricta segmentación
 3. **Conexión Local:** Vinculamos el clúster con la terminal ejecutando:
    ```bash
    aws eks update-kubeconfig --region us-east-1 --name innovatech-cluster
-## Fase 3: Gestión de Imágenes y SecretosAmazon ECR: Se crean los repositorios privados en Amazon Elastic Container Registry (ECR) 
+## Fase 3: Gestión de Imágenes y SecretosAmazon ECR: 
+Se crean los repositorios privados en Amazon Elastic Container Registry (ECR) 
 para almacenar las imágenes de React/Vite (Frontend) y Spring Boot (Backend).  Kubernetes Secrets (Base de Datos): 
 Se inyectan las credenciales de MySQL en tiempo de ejecución para evitar contraseñas quemadas en el código: 
 ## Fase 4: Despliegue de la Arquitectura en KubernetesLa orquestación de la plataforma se realiza mediante manifiestos YAML nativos aplicados al clúster.
@@ -43,5 +44,6 @@ Capa de Datos: Se despliega el servicio de MySQL (Tipo ClusterIP, Puerto 3306) u
 ## Fase 5: Monitoreo y AutoescaladoPara garantizar la resiliencia y el uso eficiente de recursos:Horizontal Pod Autoscaler (HPA):
 Se implementa el escalado nativo de Kubernetes para reaccionar a los picos de demanda[cite: 1, 2].Métrica de Reacción: Escalado automático al alcanzar el 70% de uso de CPU[cite: 1, 2].Rango Dinámico: Creación dinámica entre 1 y 4 réplicas para los microservicios[cite: 1, 2].Monitoreo con CloudWatch:
 Se habilita Amazon CloudWatch para la recolección de telemetría, métricas y el análisis de logs en tiempo real[cite: 1, 2].
-## Fase 6: Integración y Despliegue Continuo (CI/CD)El proyecto cuenta con una entrega continua real que elimina la necesidad de realizar despliegues manuales propensos a errores[cite: 1, 2].
+## Fase 6: Integración y Despliegue Continuo (CI/CD)
+El proyecto cuenta con una entrega continua real que elimina la necesidad de realizar despliegues manuales propensos a errores[cite: 1, 2].
 Toda la automatización está orquestada mediante GitHub Actions.La configuración del pipeline se encuentra en el archivo .github/workflows/main.yml. Este flujo se activa automáticamente ante cada push de código a la rama principal[cite: 1, 2].  Flujo Exacto del Pipeline (Workflow)El pipeline ejecuta las siguientes etapas secuenciales[cite: 1, 2]:Checkout del Código: Extrae la última versión del repositorio, incluyendo los microservicios front_despacho, back-Despachos_SpringBoot y back-Ventas_SpringBoot.  Configurar Credenciales de AWS: Se autentica de manera segura utilizando los secretos guardados en GitHub para interactuar con Amazon Web Services[cite: 1, 2].Login a Amazon ECR: Establece conexión con el Elastic Container Registry para preparar la subida de los artefactos[cite: 1, 2].Construir y Subir a ECR (Build & Push):Ejecuta el comando docker build para cada microservicio utilizando su respectivo dockerfile.  Realiza el docker push de las imágenes inmutables hacia los repositorios de Amazon ECR[cite: 1, 2].Actualizar Kubeconfig para EKS: Conecta el entorno de ejecución de GitHub con nuestro clúster innovatech-cluster en AWS[cite: 1, 2].Desplegar en Amazon EKS (Deploy): Ejecuta la orden para que Kubernetes actualice los contenedores con las nuevas imágenes.Verificar Estado del Despliegue (Rollout Status): Confirma que los nuevos pods estén en estado Running exitosamente antes de dar por finalizado el proceso CI/CD[cite: 1, 2].
